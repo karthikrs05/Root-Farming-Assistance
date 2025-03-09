@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text-Activated Chatbot</title>
+</head>
+<body>
+    <h1>Text-Activated Chatbot</h1>
+
+    <!-- Text input for the query -->
+    <input type="text" id="query-input" placeholder="Ask your question...">
+    <button id="submit-btn">Submit</button>
+
+    <p id="response">Your assistant will respond here...</p>
+
+    <script>
+    const submitBtn = document.getElementById('submit-btn');
+    const queryInput = document.getElementById('query-input');
+    const responseDisplay = document.getElementById('response');
+
+    submitBtn.addEventListener('click', () => {
+        const userInput = queryInput.value.trim();
+
+        if (userInput) {
+            responseDisplay.textContent = 'Processing...';
+
+            // Send input to the server
+            fetch('http://127.0.0.1:5003/invoke-ai', { // Ensure this URL matches your Flask server
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query: userInput }),
+            })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then((data) => {
+                responseDisplay.textContent = `Response: ${data.response}`;
+            })
+            .catch((error) => {
+                responseDisplay.textContent = 'Error communicating with server.';
+                console.error(error);
+            });
+        } else {
+            responseDisplay.textContent = 'Please enter a query!';
+        }
+    });
+    </script>
+</body>
+</html>
