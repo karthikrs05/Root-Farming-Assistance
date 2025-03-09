@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soil Moisture Monitoring</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+        }
+        h1 {
+            color: #007BFF;
+        }
+        .data-container {
+            margin-top: 20px;
+        }
+        .soil-moisture {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        .irrigation-status {
+            font-size: 1.2em;
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Soil Moisture Monitoring System</h1>
+    <div class="data-container">
+        <div id="soil-moisture" class="soil-moisture">Fetching soil moisture...</div>
+        <div id="irrigation-status" class="irrigation-status"></div>
+        <div id="error" class="error"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = "http://127.0.0.1:5000";
+
+        async function fetchSoilMoisture() {
+            try {
+                // Fetch the latest soil moisture data from the server
+                const response = await fetch(`${API_BASE_URL}/soil-moisture`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    const soilMoisture = data.soil_moisture.toFixed(2);
+
+                    // Update the soil moisture reading on the page
+                    document.getElementById("soil-moisture").textContent =
+                        `Current Soil Moisture: ${soilMoisture} mm`;
+
+                    // Trigger irrigation calculation
+                    await checkIrrigation(soilMoisture);
+                } else {
+                    throw new Error(data.error || "Failed to fetch soil moisture");
+                }
+            } catch (error) {
+                console.error("Error fetching soil moisture:", error);
+                document.getElementById("error").textContent =
+                    `Error: ${error.message}`;
+            }
+        }
+
+        async function checkIrrigation(soilMoisture) {
+            try {
+                // Specify the crop name for irrigation calculation
+                const cropName = "rice";
+
+                // Post data to the irrigation endpoint
+                const response = await fetch(`${API_BASE_URL}/irrigation`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ soil_moisture: soilMoisture, crop_name: cropName })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Update the irrigation status on the page
+                    const waterNeeded = data.water_needed.toFixed(2);
+                    document.getElementById("irrigation-status").textContent =
+                        `Irrigation Needed: ${waterNeeded} mm`;
+                } else {
+                    throw new Error(data.error || "Failed to calculate irrigation");
+                }
+            } catch (error) {
+                console.error("Error calculating irrigation:", error);
+                document.getElementById("error").textContent =
+                    `Error: ${error.message}`;
+            }
+        }
+
+        // Periodically fetch soil moisture and update the page
+        setInterval(fetchSoilMoisture, 20000); // Fetch every 20 seconds
+
+        // Initial fetch
+        fetchSoilMoisture();
+    </script>
+</body>
+</html>
